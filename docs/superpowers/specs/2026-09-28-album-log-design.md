@@ -25,7 +25,7 @@
 | `memo` 메모 | string | 선택, trim, 최대 2000자 |
 
 - 날짜는 문자열이 아닌 Date로 저장한다(날짜 선택기 사용, 이후 날짜순 정렬 대비).
-- 상태 목록은 `src/models/Album.ts`에서 상수 배열 하나로 정의해 스키마·검증·폼이 함께 쓴다.
+- 상태·평점 선택지는 `src/lib/albumOptions.ts`에 한 번만 정의해 스키마·검증·폼이 함께 쓴다(폼은 브라우저에서 돌기 때문에 mongoose 모델 파일을 불러올 수 없음).
 
 ## 2. 화면(URL)
 
@@ -41,16 +41,17 @@
 - **카드/표 전환**: URL 쿼리 `?view=table`(기본은 카드). 새로고침·뒤로가기에도 유지.
 - **검색**: URL 쿼리 `?q=검색어`. 앨범명 또는 아티스트에 검색어가 포함되면 결과에 포함, 대소문자 무시. 검색어의 정규식 특수문자는 이스케이프해서 글자 그대로 찾는다. 검색과 보기 모드는 함께 유지된다.
 - **삭제**: 상세 화면의 삭제 버튼 → 브라우저 `confirm` 창 → 확인 시 삭제 후 `/albums`로 이동.
-- 등록·수정 성공 시 해당 앨범의 상세 화면으로 이동한다.
+- 등록·수정 성공 시 해당 앨범의 상세 화면으로 이동한다. (상세 화면을 만들기 전까지 등록은 폼에 성공 문구를 보여주고 폼을 비운다.)
 
 ## 3. 파일 구조
 
 ```
 src/
   lib/mongodb.ts                  (기존) DB 연결 connectDB()
-  lib/albumSchema.ts              zod 검증 규칙 (서버·테스트 공용)
+  lib/albumOptions.ts             상태·평점 선택지 상수 (폼·검증·모델 공용)
+  lib/validateAlbum.ts            입력 검사 함수 validateAlbum() (서버·테스트 공용)
   lib/albums.ts                   조회 함수: listAlbums(q), getAlbum(id), 검색어 이스케이프
-  models/Album.ts                 mongoose 스키마, 상태 상수
+  models/Album.ts                 mongoose 스키마
   app/page.tsx                    /albums로 리다이렉트
   app/albums/actions.ts           Server Actions: createAlbum, updateAlbum, deleteAlbum
   app/albums/page.tsx             목록
@@ -70,7 +71,7 @@ src/
 
 ## 4. 입력 검증
 
-- 규칙은 `src/lib/albumSchema.ts`에 zod로 한 번만 정의한다.
+- 규칙은 `src/lib/validateAlbum.ts`에 if문으로 된 함수 하나로 정의한다(초보자가 읽기 쉽도록 zod 대신 직접 작성).
 - Server Action은 저장 전에 항상 이 규칙으로 검사한다(브라우저 검사는 우회 가능하므로).
 - 폼에는 HTML 속성(`required`, `min`/`max`/`step`, `maxLength`)으로 기본 검사를 건다. 상태가 `들을 예정`이면 평점·감상일 칸을 "선택"으로 표시하고 `required`를 해제한다.
 - 상태가 `들을 예정`으로 저장될 때 비어 있는 평점·감상일은 저장하지 않는다(null).
@@ -95,5 +96,5 @@ src/
 
 ## 7. 추가 의존성
 
-- `zod` (검증), `vitest` (개발용 테스트)
+- `vitest@4` (개발용 테스트. v5는 프로젝트의 @types/node 20과 호환되지 않음)
 - 스타일은 기존 Tailwind 기본 수준. 별도 디자인 작업은 범위 밖.
