@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { createAlbum } from "@/app/albums/actions";
+import DatePicker from "@/components/DatePicker";
 import { RATINGS, STATUSES, WANT_TO_LISTEN } from "@/lib/albumOptions";
 import { AlbumErrors, AlbumFormValues } from "@/lib/validateAlbum";
 
@@ -38,6 +39,11 @@ export default function AlbumForm() {
   ) {
     const name = event.target.name;
     const value = event.target.value;
+    setValues({ ...values, [name]: value });
+  }
+
+  // 달력(DatePicker)은 일반 입력칸이 아니라서, 어느 칸(name)을 바꿀지 직접 알려줍니다.
+  function handleDateChange(name: string, value: string) {
     setValues({ ...values, [name]: value });
   }
 
@@ -125,14 +131,10 @@ export default function AlbumForm() {
         <label htmlFor="releaseDate" className="mb-1 block font-semibold">
           발매일 <span className="text-red-500">*</span>
         </label>
-        <input
+        <DatePicker
           id="releaseDate"
-          name="releaseDate"
-          type="date"
           value={values.releaseDate}
-          onChange={handleChange}
-          required
-          className={INPUT_CLASS}
+          onChange={(value) => handleDateChange("releaseDate", value)}
         />
         {errors.releaseDate && (
           <p className="mt-1 text-sm text-red-500">{errors.releaseDate}</p>
@@ -149,14 +151,11 @@ export default function AlbumForm() {
             <span className="text-red-500">*</span>
           )}
         </label>
-        <input
+        <DatePicker
           id="listenedDate"
-          name="listenedDate"
-          type="date"
           value={values.listenedDate}
-          onChange={handleChange}
-          required={!isWantToListen}
-          className={INPUT_CLASS}
+          onChange={(value) => handleDateChange("listenedDate", value)}
+          disableFuture
         />
         {errors.listenedDate && (
           <p className="mt-1 text-sm text-red-500">{errors.listenedDate}</p>
