@@ -3,7 +3,7 @@
 //   사용자가 입력할 때마다 화면이 바로 바뀌어야 해서 브라우저에서 돌아가야 해요.
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createAlbum } from "@/app/albums/actions";
 import DatePicker from "@/components/DatePicker";
 import { RATINGS, STATUSES, WANT_TO_LISTEN } from "@/lib/albumOptions";
@@ -28,7 +28,7 @@ export default function AlbumForm() {
   const [values, setValues] = useState<AlbumFormValues>(EMPTY_VALUES); // 입력한 내용
   const [errors, setErrors] = useState<AlbumErrors>({}); // 칸별 오류 안내문
   const [isSaving, setIsSaving] = useState(false); // 저장 중인지
-  const [message, setMessage] = useState(""); // 저장 성공 안내문
+  const router = useRouter(); // 다른 화면으로 이동할 때 쓰는 도구
 
   // 상태가 "들을 예정"이면 평점·감상일을 비워도 됩니다.
   const isWantToListen = values.status === WANT_TO_LISTEN;
@@ -52,17 +52,18 @@ export default function AlbumForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); // 브라우저가 페이지를 새로고침하는 기본 동작을 막습니다.
     setIsSaving(true);
-    setMessage("");
 
     // 서버 함수(createAlbum)를 호출합니다. 서버에서 검사하고 DB에 저장한 뒤 결과를 돌려줘요.
     const result = await createAlbum(values);
 
-    setIsSaving(false);
-    setErrors(result.errors);
-
     if (result.ok) {
-      setMessage(`"${values.title.trim()}" 앨범을 저장했어요!`);
-      setValues(EMPTY_VALUES); // 다음 앨범을 바로 입력할 수 있게 폼을 비웁니다.
+      // 저장 성공: 방금 저장한 앨범의 상세 화면으로 이동합니다.
+      // (이동하는 동안 버튼이 다시 눌리지 않도록 "저장 중..." 상태를 그대로 둡니다)
+      router.push(`/albums/${result.id}`);
+    } else {
+      // 저장 실패: 오류 안내문을 보여주고 다시 입력할 수 있게 합니다.
+      setIsSaving(false);
+      setErrors(result.errors);
     }
   }
 
@@ -210,16 +211,6 @@ export default function AlbumForm() {
 
       {/* DB 오류처럼 특정 칸이 아닌 오류 */}
       {errors.form && <p className="text-red-500">{errors.form}</p>}
-
-      {/* 저장 성공 안내 */}
-      {message && (
-        <p className="text-green-600">
-          {message}{" "}
-          <Link href="/albums" className="font-semibold underline">
-            목록 보기
-          </Link>
-        </p>
-      )}
 
       <button
         type="submit"

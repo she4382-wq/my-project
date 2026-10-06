@@ -1,5 +1,6 @@
 // DB에서 앨범을 꺼내오는 함수들입니다. (서버에서만 실행돼요)
 
+import { isValidId } from "@/lib/albumId";
 import { connectDB } from "@/lib/mongodb";
 import Album from "@/models/Album";
 
@@ -14,6 +15,7 @@ export type AlbumItem = {
   rating: number | null; // 없으면 null
   status: string;
   memo: string;
+  createdAt: string; // 기록한 날 "2026-09-28"
 };
 
 // 모든 앨범을 최근에 등록한 순서대로 가져옵니다.
@@ -31,6 +33,22 @@ export async function listAlbums(): Promise<AlbumItem[]> {
   return albums;
 }
 
+// 아이디로 앨범 하나를 가져옵니다. 없으면 null(없음)을 돌려줘요.
+export async function getAlbum(id: string): Promise<AlbumItem | null> {
+  // 아이디 모양이 틀리면 DB에 물어볼 필요도 없이 "없음"
+  if (!isValidId(id)) {
+    return null;
+  }
+
+  await connectDB();
+  const document = await Album.findById(id).lean();
+
+  if (!document) {
+    return null;
+  }
+  return toAlbumItem(document);
+}
+
 // DB에서 꺼낸 앨범 하나를 화면용 모양으로 바꿉니다.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toAlbumItem(document: any): AlbumItem {
@@ -43,6 +61,7 @@ function toAlbumItem(document: any): AlbumItem {
     rating: document.rating, // 스키마 기본값이 null이라 없으면 null
     status: document.status,
     memo: document.memo, // 스키마 기본값이 ""
+    createdAt: timeToKoreanDate(document.createdAt),
   };
 }
 
@@ -53,4 +72,11 @@ function dateToText(date: Date | null | undefined): string {
     return "";
   }
   return date.toISOString().slice(0, 10);
+}
+
+// 기록한 시각 → 한국 시간 기준 날짜 "2026-09-28".
+// 발매일·감상일과 달리 createdAt은 "실제로 저장한 순간"이라서, 한국 시간으로 바꿔야 날짜가 맞아요.
+// (예: 한국 오전 8시 = 세계 표준시 전날 밤 11시)
+function timeToKoreanDate(time: Date): string {
+  return time.toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
 }
