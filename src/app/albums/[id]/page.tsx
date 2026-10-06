@@ -19,9 +19,18 @@ export default async function AlbumDetailPage({ params }: { params: { id: string
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <Link href="/albums" className="text-sm text-muted-foreground hover:underline">
-        ← 목록으로
-      </Link>
+      {/* 위쪽 줄: 왼쪽은 목록으로, 오른쪽은 수정 버튼 */}
+      <div className="flex items-center justify-between">
+        <Link href="/albums" className="text-sm text-muted-foreground hover:underline">
+          ← 목록으로
+        </Link>
+        <Link
+          href={`/albums/${album.id}/edit`}
+          className="rounded border px-3 py-1.5 text-sm font-semibold hover:bg-accent"
+        >
+          수정
+        </Link>
+      </div>
 
       {/* 앨범명, 아티스트, 상태 */}
       <div className="mb-6 mt-4 flex items-start justify-between gap-4">

@@ -2,6 +2,7 @@
 // ↑ 이 파일의 함수들은 브라우저가 아니라 "서버"에서만 실행됩니다.
 //   그래서 DB 비밀번호 같은 정보가 사용자 브라우저로 새어 나가지 않아요.
 
+import { isValidId } from "@/lib/albumId";
 import { connectDB } from "@/lib/mongodb";
 import { AlbumErrors, AlbumFormValues, validateAlbum } from "@/lib/validateAlbum";
 import Album from "@/models/Album";
@@ -46,6 +47,55 @@ export async function createAlbum(values: AlbumFormValues): Promise<SaveResult> 
   }
 
   return { ok: true, errors: {}, id: newId };
+}
+
+// 앨범 수정: 아이디(id)에 해당하는 앨범을 폼에서 받은 값으로 고칩니다.
+// 순서는 등록(createAlbum)과 같아요: 검사 → DB 저장 → 결과 돌려주기
+export async function updateAlbum(id: string, values: AlbumFormValues): Promise<SaveResult> {
+  // 1) 아이디 모양 확인
+  if (!isValidId(id)) {
+    return { ok: false, errors: { form: "앨범을 찾을 수 없어요." }, id: "" };
+  }
+
+  // 2) 입력 검사
+  const errors = validateAlbum(values);
+  if (Object.keys(errors).length > 0) {
+    return { ok: false, errors: errors, id: "" };
+  }
+
+  // 3) DB에서 고치기
+  try {
+    await connectDB();
+    // findByIdAndUpdate(아이디, 바꿀 값, 옵션): 아이디로 찾아서 고칩니다.
+    // runValidators: true → 고칠 때도 DB 설계도(스키마)의 규칙 검사를 다시 해요. (기본은 꺼져 있어요)
+    const updated = await Album.findByIdAndUpdate(
+      id,
+      {
+        title: values.title.trim(),
+        artist: values.artist.trim(),
+        releaseDate: new Date(values.releaseDate),
+        listenedDate: toDateOrNull(values.listenedDate),
+        rating: toNumberOrNull(values.rating),
+        status: values.status,
+        memo: values.memo.trim(),
+      },
+      { runValidators: true }
+    );
+
+    // 찾지 못했으면(그사이 다른 곳에서 지워진 경우) null이 돌아와요.
+    if (updated === null) {
+      return { ok: false, errors: { form: "이미 삭제된 앨범이에요." }, id: "" };
+    }
+  } catch (error) {
+    console.error("앨범 수정 실패:", error);
+    return {
+      ok: false,
+      errors: { form: "저장 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요." },
+      id: "",
+    };
+  }
+
+  return { ok: true, errors: {}, id: id };
 }
 
 // 빈 칸이면 null(없음), 아니면 날짜로 바꿉니다.
