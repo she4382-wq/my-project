@@ -98,6 +98,33 @@ export async function updateAlbum(id: string, values: AlbumFormValues): Promise<
   return { ok: true, errors: {}, id: id };
 }
 
+// 삭제 결과: 성공했는지(ok)와, 실패했을 때 보여줄 안내문(message)
+export type DeleteResult = {
+  ok: boolean;
+  message: string;
+};
+
+// 앨범 삭제: 아이디(id)에 해당하는 앨범을 DB에서 지웁니다.
+export async function deleteAlbum(id: string): Promise<DeleteResult> {
+  // 1) 아이디 모양 확인
+  if (!isValidId(id)) {
+    return { ok: false, message: "앨범을 찾을 수 없어요." };
+  }
+
+  // 2) DB에서 지우기
+  try {
+    await connectDB();
+    // findByIdAndDelete: 아이디로 찾아서 지웁니다.
+    // 이미 지워진 앨범이어도 오류가 나지 않아요. "없어진 상태"는 같으니 성공으로 봅니다.
+    await Album.findByIdAndDelete(id);
+  } catch (error) {
+    console.error("앨범 삭제 실패:", error);
+    return { ok: false, message: "삭제하지 못했어요. 잠시 후 다시 시도해 주세요." };
+  }
+
+  return { ok: true, message: "" };
+}
+
 // 빈 칸이면 null(없음), 아니면 날짜로 바꿉니다.
 function toDateOrNull(text: string): Date | null {
   if (text === "") {

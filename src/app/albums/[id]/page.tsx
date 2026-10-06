@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DeleteButton from "@/components/DeleteButton";
 import { getAlbum } from "@/lib/albums";
 import { formatDate, formatRating } from "@/lib/format";
 
@@ -19,17 +20,21 @@ export default async function AlbumDetailPage({ params }: { params: { id: string
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      {/* 위쪽 줄: 왼쪽은 목록으로, 오른쪽은 수정 버튼 */}
-      <div className="flex items-center justify-between">
+      {/* 위쪽 줄: 왼쪽은 목록으로, 오른쪽은 수정·삭제 버튼 */}
+      <div className="flex items-start justify-between">
         <Link href="/albums" className="text-sm text-muted-foreground hover:underline">
           ← 목록으로
         </Link>
-        <Link
-          href={`/albums/${album.id}/edit`}
-          className="rounded border px-3 py-1.5 text-sm font-semibold hover:bg-accent"
-        >
-          수정
-        </Link>
+        <div className="flex items-start gap-2">
+          <Link
+            href={`/albums/${album.id}/edit`}
+            className="rounded border px-3 py-1.5 text-sm font-semibold hover:bg-accent"
+          >
+            수정
+          </Link>
+          {/* 삭제 버튼은 확인창을 띄워야 해서 브라우저용 컴포넌트로 따로 만들었어요 */}
+          <DeleteButton albumId={album.id} albumTitle={album.title} />
+        </div>
       </div>
 
       {/* 앨범명, 아티스트, 상태 */}
