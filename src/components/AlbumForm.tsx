@@ -3,6 +3,7 @@
 //   사용자가 입력할 때마다 화면이 바로 바뀌어야 해서 브라우저에서 돌아가야 해요.
 
 import { useState } from "react";
+import Link from "next/link";
 import { createAlbum } from "@/app/albums/actions";
 import DatePicker from "@/components/DatePicker";
 import { RATINGS, STATUSES, WANT_TO_LISTEN } from "@/lib/albumOptions";
@@ -211,7 +212,14 @@ export default function AlbumForm() {
       {errors.form && <p className="text-red-500">{errors.form}</p>}
 
       {/* 저장 성공 안내 */}
-      {message && <p className="text-green-600">{message}</p>}
+      {message && (
+        <p className="text-green-600">
+          {message}{" "}
+          <Link href="/albums" className="font-semibold underline">
+            목록 보기
+          </Link>
+        </p>
+      )}
 
       <button
         type="submit"
