@@ -18,7 +18,8 @@ export type AlbumErrors = {
 
 // 입력값을 검사해서, 틀린 칸마다 안내문을 담아 돌려줍니다.
 // 돌려준 객체가 비어 있으면({}) 모든 입력이 올바르다는 뜻입니다.
-export function validateAlbum(values: AlbumFormValues): AlbumErrors {
+// today: 오늘 날짜("2026-09-28"). 안 넘기면 한국 시간 기준 오늘을 씁니다. (테스트에서 날짜를 고정할 때 넘겨요)
+export function validateAlbum(values: AlbumFormValues, today: string = todayInKorea()): AlbumErrors {
   const errors: AlbumErrors = {};
 
   // 1) 앨범명: 필수, 200자까지
@@ -57,6 +58,9 @@ export function validateAlbum(values: AlbumFormValues): AlbumErrors {
     }
   } else if (!isValidDate(values.listenedDate)) {
     errors.listenedDate = "날짜 형식이 올바르지 않아요.";
+  } else if (values.listenedDate > today) {
+    // "2026-09-29" > "2026-09-28" 처럼, 같은 모양의 날짜 글자는 글자끼리 비교해도 날짜 순서와 같아요.
+    errors.listenedDate = "감상일은 오늘 이후일 수 없어요.";
   }
 
   // 6) 평점
@@ -84,4 +88,11 @@ function isValidDate(text: string): boolean {
   const date = new Date(text);
   // 날짜로 바꿀 수 없는 글자면 getTime()이 NaN(숫자 아님)이 됩니다.
   return !isNaN(date.getTime());
+}
+
+// 한국 시간 기준 오늘 날짜를 "2026-09-28" 모양으로 돌려줍니다.
+// 서버 컴퓨터는 세계 표준시(UTC)로 돌 수 있어서, 시간대를 "Asia/Seoul"로 직접 정해줍니다.
+// ("en-CA"는 캐나다 날짜 표기인데, 마침 "2026-09-28"처럼 연-월-일 모양으로 나와서 씁니다.)
+export function todayInKorea(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
 }
