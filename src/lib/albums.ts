@@ -2,6 +2,7 @@
 
 import { isValidId } from "@/lib/albumId";
 import { connectDB } from "@/lib/mongodb";
+import { escapeSearchText } from "@/lib/search";
 import Album from "@/models/Album";
 
 // 화면에서 쓰기 쉬운 앨범 한 개의 모양.
@@ -18,13 +19,29 @@ export type AlbumItem = {
   createdAt: string; // 기록한 날 "2026-09-28"
 };
 
-// 모든 앨범을 최근에 등록한 순서대로 가져옵니다.
-export async function listAlbums(): Promise<AlbumItem[]> {
+// 앨범을 최근에 등록한 순서대로 가져옵니다.
+// searchText(검색어)가 있으면, 앨범명이나 아티스트에 그 글자가 들어간 앨범만 가져와요.
+// 검색어가 ""(빈 글자)면 전부 가져옵니다.
+export async function listAlbums(searchText: string = ""): Promise<AlbumItem[]> {
   await connectDB();
 
-  // find(): 전부 찾기 / sort({ createdAt: -1 }): 만든 시각 기준 내림차순(최신이 먼저)
+  // 찾을 조건. {} 는 "조건 없음 = 전부"라는 뜻이에요.
+  let condition = {};
+  if (searchText !== "") {
+    // $regex: 이 글자가 "포함된" 것을 찾기 / $options: "i" → 대소문자 구분 안 함 (love = Love)
+    // $or: 둘 중 하나라도 맞으면 찾기 (앨범명에 있거나, 아티스트에 있거나)
+    const pattern = escapeSearchText(searchText);
+    condition = {
+      $or: [
+        { title: { $regex: pattern, $options: "i" } },
+        { artist: { $regex: pattern, $options: "i" } },
+      ],
+    };
+  }
+
+  // find(조건): 조건에 맞는 것 찾기 / sort({ createdAt: -1 }): 만든 시각 기준 내림차순(최신이 먼저)
   // lean(): mongoose 기능이 붙지 않은 가벼운 데이터로 받기
-  const documents = await Album.find().sort({ createdAt: -1 }).lean();
+  const documents = await Album.find(condition).sort({ createdAt: -1 }).lean();
 
   const albums: AlbumItem[] = [];
   for (const document of documents) {
