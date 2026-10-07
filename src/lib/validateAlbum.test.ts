@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { todayInKorea, validateAlbum } from "./validateAlbum";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { isAlbumFormValues, todayInKorea, validateAlbum } from "./validateAlbum";
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-07T00:00:00Z"));
+});
+afterEach(() => vi.useRealTimers());
 
 // 모든 칸을 올바르게 채운 기본 입력값
 const goodValues = {
@@ -79,5 +85,59 @@ describe("validateAlbum", () => {
   it("메모가 2000자를 넘으면 오류", () => {
     const errors = validateAlbum({ ...goodValues, memo: "가".repeat(2001) });
     expect(errors.memo).toBeDefined();
+  });
+
+  it.each([null, undefined, 123, "text", [], true])("잘못된 전체 입력 %j를 안전하게 거부한다", (input) => {
+    expect(isAlbumFormValues(input)).toBe(false);
+    expect(validateAlbum(input).form).toBeDefined();
+  });
+
+  it.each(["title", "artist", "releaseDate", "listenedDate", "rating", "status", "memo"] as const)(
+    "%s는 문자열이어야 한다", (field) => {
+      for (const input of [42, {}, [], null, undefined, true]) {
+        const values = { ...goodValues, [field]: input };
+        expect(isAlbumFormValues(values)).toBe(false);
+        expect(validateAlbum(values)[field]).toBeDefined();
+      }
+    }
+  );
+
+  it("필드가 빠진 객체는 거부하고 정상 객체는 통과한다", () => {
+    expect(isAlbumFormValues(goodValues)).toBe(true);
+    expect(Object.keys(validateAlbum({}))).toHaveLength(7);
+  });
+
+  it.each([
+    "2026-02-30", "2026-02-29", "1900-02-29", "2026-04-31",
+    "1/1/2099", "0", "2026-2-01", "2026-02-1", "2026-13-01", "2026-01-00",
+    "2026-09-28T00:00:00Z", " 2026-09-28", "2026-09-28 ", "garbage",
+  ])("잘못된 날짜 %s는 발매일과 감상일 모두 거부한다", (date) => {
+    expect(validateAlbum({ ...goodValues, releaseDate: date }).releaseDate).toBeDefined();
+    expect(validateAlbum({ ...goodValues, listenedDate: date }).listenedDate).toBeDefined();
+  });
+
+  it.each(["2024-02-29", "2000-02-29", "2026-02-28", "2026-04-30"])(
+    "실제로 존재하는 날짜 %s는 통과한다", (date) => {
+      expect(validateAlbum({ ...goodValues, releaseDate: date, listenedDate: date })).toEqual({});
+    }
+  );
+
+  it("발매일은 미래도 허용하고 감상일은 거부한다", () => {
+    const errors = validateAlbum({ ...goodValues, releaseDate: "2099-01-01", listenedDate: "2099-01-01" });
+    expect(errors.releaseDate).toBeUndefined();
+    expect(errors.listenedDate).toBe("감상일은 오늘 이후일 수 없어요.");
+  });
+
+  it("들을 예정이어도 입력한 감상일은 실제 날짜여야 한다", () => {
+    expect(validateAlbum({ ...goodValues, status: "들을 예정", listenedDate: "2026-02-30", rating: "" }).listenedDate).toBeDefined();
+  });
+
+  it("한국 자정 전후로 오늘 날짜와 미래 감상일 판단이 바뀐다", () => {
+    vi.setSystemTime(new Date("2026-09-28T14:59:59Z"));
+    expect(todayInKorea()).toBe("2026-09-28");
+    expect(validateAlbum({ ...goodValues, listenedDate: "2026-09-29" }).listenedDate).toBeDefined();
+    vi.setSystemTime(new Date("2026-09-28T15:00:00Z"));
+    expect(todayInKorea()).toBe("2026-09-29");
+    expect(validateAlbum({ ...goodValues, listenedDate: "2026-09-29" }).listenedDate).toBeUndefined();
   });
 });
