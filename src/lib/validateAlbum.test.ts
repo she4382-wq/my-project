@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateAlbum } from "./validateAlbum";
+import { todayInKorea, validateAlbum } from "./validateAlbum";
 
 // 모든 칸을 올바르게 채운 기본 입력값
 const goodValues = {
@@ -59,6 +59,21 @@ describe("validateAlbum", () => {
       listenedDate: "",
     });
     expect(errors).toEqual({});
+  });
+
+  it("감상일이 오늘보다 뒤(미래)면 오류", () => {
+    // 오늘을 2026-09-28로 정해두고 검사합니다
+    const errors = validateAlbum({ ...goodValues, listenedDate: "2026-09-29" }, "2026-09-28");
+    expect(errors.listenedDate).toBe("감상일은 오늘 이후일 수 없어요.");
+  });
+
+  it("감상일이 오늘이면 통과", () => {
+    const errors = validateAlbum({ ...goodValues, listenedDate: "2026-09-28" }, "2026-09-28");
+    expect(errors.listenedDate).toBeUndefined();
+  });
+
+  it("오늘을 따로 알려주지 않으면 한국 시간 기준 오늘을 쓴다", () => {
+    expect(todayInKorea()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it("메모가 2000자를 넘으면 오류", () => {
