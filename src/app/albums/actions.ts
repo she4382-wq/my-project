@@ -4,7 +4,7 @@
 
 import { isValidId } from "@/lib/albumId";
 import { connectDB } from "@/lib/mongodb";
-import { AlbumErrors, AlbumFormValues, validateAlbum } from "@/lib/validateAlbum";
+import { AlbumErrors, isAlbumFormValues, validateAlbum } from "@/lib/validateAlbum";
 import Album from "@/models/Album";
 
 // 저장 결과: 성공했는지(ok), 오류 안내문(errors), 저장한 앨범의 아이디(id)를 화면에 돌려줍니다.
@@ -16,10 +16,10 @@ export type SaveResult = {
 };
 
 // 앨범 등록: 폼에서 받은 값을 검사하고, 문제가 없으면 DB에 저장합니다.
-export async function createAlbum(values: AlbumFormValues): Promise<SaveResult> {
+export async function createAlbum(values: unknown): Promise<SaveResult> {
   // 1) 입력 검사. 브라우저에서 한 번 검사했더라도 서버에서 꼭 다시 검사합니다.
   const errors = validateAlbum(values);
-  if (Object.keys(errors).length > 0) {
+  if (!isAlbumFormValues(values) || Object.keys(errors).length > 0) {
     return { ok: false, errors: errors, id: "" };
   }
 
@@ -51,7 +51,7 @@ export async function createAlbum(values: AlbumFormValues): Promise<SaveResult> 
 
 // 앨범 수정: 아이디(id)에 해당하는 앨범을 폼에서 받은 값으로 고칩니다.
 // 순서는 등록(createAlbum)과 같아요: 검사 → DB 저장 → 결과 돌려주기
-export async function updateAlbum(id: string, values: AlbumFormValues): Promise<SaveResult> {
+export async function updateAlbum(id: string, values: unknown): Promise<SaveResult> {
   // 1) 아이디 모양 확인
   if (!isValidId(id)) {
     return { ok: false, errors: { form: "앨범을 찾을 수 없어요." }, id: "" };
@@ -59,7 +59,7 @@ export async function updateAlbum(id: string, values: AlbumFormValues): Promise<
 
   // 2) 입력 검사
   const errors = validateAlbum(values);
-  if (Object.keys(errors).length > 0) {
+  if (!isAlbumFormValues(values) || Object.keys(errors).length > 0) {
     return { ok: false, errors: errors, id: "" };
   }
 

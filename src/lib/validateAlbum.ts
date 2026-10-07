@@ -16,11 +16,38 @@ export type AlbumErrors = {
   [field: string]: string;
 };
 
+const ALBUM_FIELDS = [
+  "title", "artist", "releaseDate", "listenedDate", "rating", "status", "memo",
+] as const;
+
+// TypeScript의 타입은 실행 중 외부 입력을 검사하지 않으므로 실제 값을 확인합니다.
+export function isAlbumFormValues(values: unknown): values is AlbumFormValues {
+  if (typeof values !== "object" || values === null || Array.isArray(values)) {
+    return false;
+  }
+  const record = values as Record<string, unknown>;
+  return ALBUM_FIELDS.every((field) => typeof record[field] === "string");
+}
+
 // 입력값을 검사해서, 틀린 칸마다 안내문을 담아 돌려줍니다.
 // 돌려준 객체가 비어 있으면({}) 모든 입력이 올바르다는 뜻입니다.
 // today: 오늘 날짜("2026-09-28"). 안 넘기면 한국 시간 기준 오늘을 씁니다. (테스트에서 날짜를 고정할 때 넘겨요)
-export function validateAlbum(values: AlbumFormValues, today: string = todayInKorea()): AlbumErrors {
+export function validateAlbum(values: unknown, today: string = todayInKorea()): AlbumErrors {
   const errors: AlbumErrors = {};
+
+  // 0) 객체와 모든 필드의 타입을 먼저 검사합니다. 실패하면 trim이나 Date 변환을 하지 않습니다.
+  if (!isAlbumFormValues(values)) {
+    if (typeof values !== "object" || values === null || Array.isArray(values)) {
+      return { form: "입력 데이터 형식이 올바르지 않아요." };
+    }
+    const record = values as Record<string, unknown>;
+    for (const field of ALBUM_FIELDS) {
+      if (typeof record[field] !== "string") {
+        errors[field] = "문자열 형식으로 입력해 주세요.";
+      }
+    }
+    return errors;
+  }
 
   // 1) 앨범명: 필수, 200자까지
   const title = values.title.trim();
@@ -40,7 +67,9 @@ export function validateAlbum(values: AlbumFormValues, today: string = todayInKo
 
   // 3) 발매일: 필수
   if (!isValidDate(values.releaseDate)) {
-    errors.releaseDate = "발매일을 선택해 주세요.";
+    errors.releaseDate = values.releaseDate === ""
+      ? "발매일을 선택해 주세요."
+      : "발매일은 YYYY-MM-DD 형식의 실제 날짜여야 해요.";
   }
 
   // 4) 상태: 정해진 선택지 중 하나여야 함
@@ -82,12 +111,13 @@ export function validateAlbum(values: AlbumFormValues, today: string = todayInKo
 
 // "2026-09-28" 같은 글자가 올바른 날짜인지 확인합니다.
 function isValidDate(text: string): boolean {
-  if (text === "") {
+  // 같은 형식만 허용해야 이후의 문자열 날짜 비교도 안전합니다.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
     return false;
   }
-  const date = new Date(text);
-  // 날짜로 바꿀 수 없는 글자면 getTime()이 NaN(숫자 아님)이 됩니다.
-  return !isNaN(date.getTime());
+  const date = new Date(`${text}T00:00:00.000Z`);
+  // Invalid Date는 먼저 거르고, 자동 보정된 날짜는 원문과 비교해서 거릅니다.
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === text;
 }
 
 // 한국 시간 기준 오늘 날짜를 "2026-09-28" 모양으로 돌려줍니다.
