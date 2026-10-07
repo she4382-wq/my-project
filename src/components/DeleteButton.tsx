@@ -17,6 +17,7 @@ export default function DeleteButton({ albumId, albumTitle }: DeleteButtonProps)
 
   // [삭제] 버튼을 누르면 실행됩니다.
   async function handleClick() {
+    if (isDeleting) return;
     // 1) 정말 지울지 물어봅니다.
     //    confirm()은 브라우저 기본 확인창을 띄우고, [확인]이면 true, [취소]면 false를 돌려줘요.
     const answer = window.confirm(`"${albumTitle}" 앨범을 삭제할까요?\n삭제하면 되돌릴 수 없어요.`);
@@ -27,16 +28,21 @@ export default function DeleteButton({ albumId, albumTitle }: DeleteButtonProps)
     // 2) 서버에 삭제를 요청합니다.
     setIsDeleting(true);
     setMessage("");
-    const result = await deleteAlbum(albumId);
+    try {
+      const result = await deleteAlbum(albumId);
 
-    if (result.ok) {
-      // 3) 성공: 목록 화면으로 이동합니다. refresh로 지워진 앨범이 목록에 남아 보이지 않게 해요.
-      router.push("/albums");
-      router.refresh();
-    } else {
-      // 3) 실패: 안내문을 보여주고 버튼을 다시 누를 수 있게 합니다.
+      if (result.ok) {
+        // 성공 후 목록으로 이동하는 동안에는 중복 삭제를 막습니다.
+        router.push("/albums");
+        router.refresh();
+      } else {
+        setIsDeleting(false);
+        setMessage(result.message);
+      }
+    } catch {
+      // 연결 실패나 오래된 서버 함수 호출 오류도 화면에서 처리합니다.
       setIsDeleting(false);
-      setMessage(result.message);
+      setMessage("삭제 결과를 확인하지 못했어요. 연결 상태를 확인하고, 페이지를 새로고침해 삭제 여부를 확인해 주세요.");
     }
   }
 
@@ -56,7 +62,7 @@ export default function DeleteButton({ albumId, albumTitle }: DeleteButtonProps)
       >
         {buttonText}
       </button>
-      {message && <p className="mt-1 text-sm text-red-500">{message}</p>}
+      {message && <p role="alert" className="mt-1 text-sm text-red-500">{message}</p>}
     </div>
   );
 }
