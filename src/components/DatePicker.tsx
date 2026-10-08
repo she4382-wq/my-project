@@ -9,6 +9,7 @@ import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { koreaToday, textToDate } from "@/lib/dateText";
 
 type DatePickerProps = {
   id: string;
@@ -23,7 +24,8 @@ export default function DatePicker({ id, value, onChange, disableFuture, invalid
   const [isOpen, setIsOpen] = useState(false); // 달력이 열려 있는지
 
   const selectedDate = textToDate(value);
-  const today = new Date();
+  // "오늘"은 한국 시간 기준으로 정합니다. (서버 검사와 같은 기준이어야 달력에서 고른 날이 저장 때 거부되지 않아요)
+  const today = koreaToday();
 
   // 달력에서 날짜를 누르면 실행됩니다.
   function handleSelect(date: Date | undefined) {
@@ -76,18 +78,4 @@ export default function DatePicker({ id, value, onChange, disableFuture, invalid
       </PopoverContent>
     </Popover>
   );
-}
-
-// "2019-11-18" → 2019년 11월 18일 날짜. 비어 있으면 undefined(없음).
-// new Date("2019-11-18")을 쓰면 세계 표준시 기준이 되어 한국에서 하루가 밀릴 수 있어서,
-// 연·월·일 숫자를 직접 넣어 한국(내 컴퓨터) 시간 기준 날짜를 만듭니다.
-function textToDate(text: string): Date | undefined {
-  if (text === "") {
-    return undefined;
-  }
-  const parts = text.split("-"); // ["2019", "11", "18"]
-  const year = Number(parts[0]);
-  const month = Number(parts[1]) - 1; // 자바스크립트는 월을 0(1월)부터 셉니다
-  const day = Number(parts[2]);
-  return new Date(year, month, day);
 }
