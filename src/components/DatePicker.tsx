@@ -15,9 +15,11 @@ type DatePickerProps = {
   value: string; // "2019-11-18" 같은 글자. 비어 있으면 ""
   onChange: (value: string) => void; // 날짜를 고르면 새 글자를 알려줍니다
   disableFuture?: boolean; // true면 오늘 이후 날짜는 못 고릅니다
+  invalid?: boolean; // true면 "이 칸 입력이 틀렸다"고 화면 낭독기에 알려줍니다
+  errorId?: string; // 이 칸의 오류 문구가 있는 곳의 아이디 (화면 낭독기가 같이 읽어줘요)
 };
 
-export default function DatePicker({ id, value, onChange, disableFuture }: DatePickerProps) {
+export default function DatePicker({ id, value, onChange, disableFuture, invalid, errorId }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false); // 달력이 열려 있는지
 
   const selectedDate = textToDate(value);
@@ -42,7 +44,14 @@ export default function DatePicker({ id, value, onChange, disableFuture }: DateP
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button id={id} type="button" variant="outline" className="w-full justify-start font-normal">
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          aria-invalid={invalid}
+          aria-describedby={errorId}
+          className="w-full justify-start font-normal"
+        >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {selectedDate ? (
             format(selectedDate, "yyyy년 M월 d일")

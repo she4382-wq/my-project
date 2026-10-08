@@ -60,6 +60,25 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
     buttonText = "저장 중...";
   }
 
+  // ── 화면 낭독기(시각장애인용 읽어주는 프로그램)를 위한 도우미 ──
+  // 이 칸에 오류가 있는지: 있으면 입력칸에 aria-invalid를 켜서 "틀린 칸"이라고 알려줘요.
+  function hasError(field: string): boolean {
+    if (errors[field]) {
+      return true;
+    }
+    return false;
+  }
+
+  // 이 칸의 오류 문구가 있는 곳의 아이디. 예: "title" → "title-error"
+  // 입력칸의 aria-describedby에 넣으면, 화면 낭독기가 칸 이름과 오류 문구를 함께 읽어줘요.
+  // 오류가 없으면 undefined(없음)를 돌려줘서 아무것도 연결하지 않아요.
+  function errorIdFor(field: string): string | undefined {
+    if (errors[field]) {
+      return field + "-error";
+    }
+    return undefined;
+  }
+
   // 상태가 "들을 예정"이면 평점·감상일을 비워도 됩니다.
   const isWantToListen = values.status === WANT_TO_LISTEN;
 
@@ -122,6 +141,8 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <input
           id="title"
+          aria-invalid={hasError("title")}
+          aria-describedby={errorIdFor("title")}
           name="title"
           type="text"
           value={values.title}
@@ -130,7 +151,7 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
           maxLength={200}
           className={INPUT_CLASS}
         />
-        {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
+        {errors.title && <p id="title-error" className="mt-1 text-sm text-red-500">{errors.title}</p>}
       </div>
 
       {/* 아티스트 */}
@@ -140,6 +161,8 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <input
           id="artist"
+          aria-invalid={hasError("artist")}
+          aria-describedby={errorIdFor("artist")}
           name="artist"
           type="text"
           value={values.artist}
@@ -148,7 +171,7 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
           maxLength={200}
           className={INPUT_CLASS}
         />
-        {errors.artist && <p className="mt-1 text-sm text-red-500">{errors.artist}</p>}
+        {errors.artist && <p id="artist-error" className="mt-1 text-sm text-red-500">{errors.artist}</p>}
       </div>
 
       {/* 상태 */}
@@ -158,6 +181,8 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <select
           id="status"
+          aria-invalid={hasError("status")}
+          aria-describedby={errorIdFor("status")}
           name="status"
           value={values.status}
           onChange={handleChange}
@@ -171,7 +196,7 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
             </option>
           ))}
         </select>
-        {errors.status && <p className="mt-1 text-sm text-red-500">{errors.status}</p>}
+        {errors.status && <p id="status-error" className="mt-1 text-sm text-red-500">{errors.status}</p>}
       </div>
 
       {/* 발매일 */}
@@ -181,11 +206,13 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <DatePicker
           id="releaseDate"
+          invalid={hasError("releaseDate")}
+          errorId={errorIdFor("releaseDate")}
           value={values.releaseDate}
           onChange={(value) => handleDateChange("releaseDate", value)}
         />
         {errors.releaseDate && (
-          <p className="mt-1 text-sm text-red-500">{errors.releaseDate}</p>
+          <p id="releaseDate-error" className="mt-1 text-sm text-red-500">{errors.releaseDate}</p>
         )}
       </div>
 
@@ -201,12 +228,14 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <DatePicker
           id="listenedDate"
+          invalid={hasError("listenedDate")}
+          errorId={errorIdFor("listenedDate")}
           value={values.listenedDate}
           onChange={(value) => handleDateChange("listenedDate", value)}
           disableFuture
         />
         {errors.listenedDate && (
-          <p className="mt-1 text-sm text-red-500">{errors.listenedDate}</p>
+          <p id="listenedDate-error" className="mt-1 text-sm text-red-500">{errors.listenedDate}</p>
         )}
       </div>
 
@@ -222,6 +251,8 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <select
           id="rating"
+          aria-invalid={hasError("rating")}
+          aria-describedby={errorIdFor("rating")}
           name="rating"
           value={values.rating}
           onChange={handleChange}
@@ -235,7 +266,7 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
             </option>
           ))}
         </select>
-        {errors.rating && <p className="mt-1 text-sm text-red-500">{errors.rating}</p>}
+        {errors.rating && <p id="rating-error" className="mt-1 text-sm text-red-500">{errors.rating}</p>}
       </div>
 
       {/* 메모 */}
@@ -245,6 +276,8 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
         </label>
         <textarea
           id="memo"
+          aria-invalid={hasError("memo")}
+          aria-describedby={errorIdFor("memo")}
           name="memo"
           rows={5}
           value={values.memo}
@@ -252,7 +285,7 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
           maxLength={2000}
           className={INPUT_CLASS}
         />
-        {errors.memo && <p className="mt-1 text-sm text-red-500">{errors.memo}</p>}
+        {errors.memo && <p id="memo-error" className="mt-1 text-sm text-red-500">{errors.memo}</p>}
       </div>
 
       {/* DB 오류처럼 특정 칸이 아닌 오류 */}

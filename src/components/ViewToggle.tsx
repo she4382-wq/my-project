@@ -9,10 +9,17 @@ export default function ViewToggle({ view, searchText }: { view: string; searchT
 
   let cardClass = notSelected;
   let tableClass = notSelected;
+  // aria-current="page": 화면 낭독기에 "지금 보고 있는 쪽"이라고 알려주는 표시예요.
+  // (색만으로는 화면을 볼 수 없는 사람이 어느 쪽이 선택됐는지 알 수 없어서 붙여요)
+  // undefined면 아무것도 붙이지 않아요.
+  let cardCurrent: "page" | undefined = undefined;
+  let tableCurrent: "page" | undefined = undefined;
   if (view === "table") {
     tableClass = selected;
+    tableCurrent = "page";
   } else {
     cardClass = selected;
+    cardCurrent = "page";
   }
 
   // 링크 주소 만들기
@@ -26,13 +33,14 @@ export default function ViewToggle({ view, searchText }: { view: string; searchT
   }
 
   return (
-    <div className="inline-flex overflow-hidden rounded-md border text-sm">
-      <Link href={cardHref} className={`px-3 py-1.5 ${cardClass}`}>
+    // nav + aria-label: 화면 낭독기가 "보기 방식" 묶음이라고 소개해 줘요.
+    <nav aria-label="보기 방식" className="inline-flex overflow-hidden rounded-md border text-sm">
+      <Link href={cardHref} aria-current={cardCurrent} className={`px-3 py-1.5 ${cardClass}`}>
         카드
       </Link>
-      <Link href={tableHref} className={`border-l px-3 py-1.5 ${tableClass}`}>
+      <Link href={tableHref} aria-current={tableCurrent} className={`border-l px-3 py-1.5 ${tableClass}`}>
         표
       </Link>
-    </div>
+    </nav>
   );
 }
