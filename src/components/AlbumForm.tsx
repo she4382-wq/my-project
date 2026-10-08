@@ -81,27 +81,35 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
   // 저장 버튼을 누르면 실행됩니다.
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); // 브라우저가 페이지를 새로고침하는 기본 동작을 막습니다.
+    if (isSaving) return;
     setIsSaving(true);
+    setErrors({}); // 새 요청에서는 지난 요청의 오류를 지웁니다.
 
     // 서버 함수를 호출합니다. 서버에서 검사하고 DB에 저장한 뒤 결과를 돌려줘요.
     // 수정이면 updateAlbum(고치기), 등록이면 createAlbum(새로 만들기)
-    let result: SaveResult;
-    if (isEditing && albumId) {
-      result = await updateAlbum(albumId, values);
-    } else {
-      result = await createAlbum(values);
-    }
+    try {
+      let result: SaveResult;
+      if (isEditing && albumId) {
+        result = await updateAlbum(albumId, values);
+      } else {
+        result = await createAlbum(values);
+      }
 
-    if (result.ok) {
-      // 저장 성공: 그 앨범의 상세 화면으로 이동합니다.
-      // (이동하는 동안 버튼이 다시 눌리지 않도록 "저장 중..." 상태를 그대로 둡니다)
-      router.push(`/albums/${result.id}`);
-      // refresh: 상세 화면을 예전에 본 적이 있어도, 고친 내용으로 새로 그리게 합니다
-      router.refresh();
-    } else {
-      // 저장 실패: 오류 안내문을 보여주고 다시 입력할 수 있게 합니다.
+      if (result.ok) {
+        // 성공 후 화면 이동 중에는 버튼을 잠가 중복 저장을 막습니다.
+        router.push(`/albums/${result.id}`);
+        router.refresh();
+      } else {
+        // 서버가 반환한 입력/DB 오류는 그대로 보여줍니다.
+        setIsSaving(false);
+        setErrors(result.errors);
+      }
+    } catch {
+      // 응답을 못 받은 경우에도 입력은 유지하고 버튼을 복구합니다.
       setIsSaving(false);
-      setErrors(result.errors);
+      setErrors({
+        form: "저장 결과를 확인하지 못했어요. 연결 상태와 목록의 저장 여부를 확인해 주세요. 계속 문제가 생기면 페이지를 새로고침해 주세요.",
+      });
     }
   }
 
@@ -248,7 +256,7 @@ export default function AlbumForm({ albumId, initialValues }: AlbumFormProps) {
       </div>
 
       {/* DB 오류처럼 특정 칸이 아닌 오류 */}
-      {errors.form && <p className="text-red-500">{errors.form}</p>}
+      {errors.form && <p role="alert" className="text-red-500">{errors.form}</p>}
 
       <button
         type="submit"
