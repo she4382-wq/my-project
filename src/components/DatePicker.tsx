@@ -9,19 +9,23 @@ import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { koreaToday, textToDate } from "@/lib/dateText";
 
 type DatePickerProps = {
   id: string;
   value: string; // "2019-11-18" 같은 글자. 비어 있으면 ""
   onChange: (value: string) => void; // 날짜를 고르면 새 글자를 알려줍니다
   disableFuture?: boolean; // true면 오늘 이후 날짜는 못 고릅니다
+  invalid?: boolean; // true면 "이 칸 입력이 틀렸다"고 화면 낭독기에 알려줍니다
+  errorId?: string; // 이 칸의 오류 문구가 있는 곳의 아이디 (화면 낭독기가 같이 읽어줘요)
 };
 
-export default function DatePicker({ id, value, onChange, disableFuture }: DatePickerProps) {
+export default function DatePicker({ id, value, onChange, disableFuture, invalid, errorId }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false); // 달력이 열려 있는지
 
   const selectedDate = textToDate(value);
-  const today = new Date();
+  // "오늘"은 한국 시간 기준으로 정합니다. (서버 검사와 같은 기준이어야 달력에서 고른 날이 저장 때 거부되지 않아요)
+  const today = koreaToday();
 
   // 달력에서 날짜를 누르면 실행됩니다.
   function handleSelect(date: Date | undefined) {
@@ -42,7 +46,14 @@ export default function DatePicker({ id, value, onChange, disableFuture }: DateP
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button id={id} type="button" variant="outline" className="w-full justify-start font-normal">
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          aria-invalid={invalid}
+          aria-describedby={errorId}
+          className="w-full justify-start font-normal"
+        >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {selectedDate ? (
             format(selectedDate, "yyyy년 M월 d일")
@@ -67,18 +78,4 @@ export default function DatePicker({ id, value, onChange, disableFuture }: DateP
       </PopoverContent>
     </Popover>
   );
-}
-
-// "2019-11-18" → 2019년 11월 18일 날짜. 비어 있으면 undefined(없음).
-// new Date("2019-11-18")을 쓰면 세계 표준시 기준이 되어 한국에서 하루가 밀릴 수 있어서,
-// 연·월·일 숫자를 직접 넣어 한국(내 컴퓨터) 시간 기준 날짜를 만듭니다.
-function textToDate(text: string): Date | undefined {
-  if (text === "") {
-    return undefined;
-  }
-  const parts = text.split("-"); // ["2019", "11", "18"]
-  const year = Number(parts[0]);
-  const month = Number(parts[1]) - 1; // 자바스크립트는 월을 0(1월)부터 셉니다
-  const day = Number(parts[2]);
-  return new Date(year, month, day);
 }
