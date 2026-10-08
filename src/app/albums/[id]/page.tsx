@@ -8,10 +8,12 @@ import { formatDate, formatRating } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 // 주소 /albums/아이디 의 화면입니다. 이 파일은 서버에서 실행돼요.
-// 폴더 이름이 [id]라서, 주소의 아이디 부분이 params.id 로 들어옵니다.
-// 예: /albums/6abcc60882bb11f8e36d8321 → params.id = "6abcc60882bb11f8e36d8321"
-export default async function AlbumDetailPage({ params }: { params: { id: string } }) {
-  const album = await getAlbum(params.id);
+// 폴더 이름이 [id]라서, 주소의 아이디 부분이 params 안의 id 로 들어옵니다.
+// 예: /albums/6abcc60882bb11f8e36d8321 → id = "6abcc60882bb11f8e36d8321"
+// Next.js 15부터 params는 "나중에 도착하는 값(Promise)"이라 await로 기다렸다가 꺼내요.
+export default async function AlbumDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const album = await getAlbum(id);
 
   // 앨범이 없으면(잘못된 주소, 지워진 앨범) not-found.tsx 화면을 보여줍니다.
   if (album === null) {
