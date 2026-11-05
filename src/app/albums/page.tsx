@@ -13,21 +13,25 @@ export const dynamic = "force-dynamic";
 // searchParams: 주소의 ? 뒤에 붙은 값.
 //   /albums?view=table      → { view: "table" }
 //   /albums?q=아이유         → { q: "아이유" }
+// Next.js 15부터 searchParams는 "나중에 도착하는 값(Promise)"이라 await로 기다렸다가 꺼내요.
 export default async function AlbumsPage({
   searchParams,
 }: {
-  searchParams: { view?: string; q?: string };
+  searchParams: Promise<{ view?: string | string[]; q?: string | string[] }>;
 }) {
+  const query = await searchParams;
+
   // 보기 모드: 기본은 카드
   let view = "card";
-  if (searchParams.view === "table") {
+  if (query.view === "table") {
     view = "table";
   }
 
   // 검색어: 주소에 q가 있으면 정리해서 쓰고, 없으면 ""(검색 안 함)
+  // (?q=a&q=b 처럼 두 번 오면 목록이 들어와서, 글자일 때만 씁니다)
   let searchText = "";
-  if (typeof searchParams.q === "string") {
-    searchText = cleanSearchText(searchParams.q);
+  if (typeof query.q === "string") {
+    searchText = cleanSearchText(query.q);
   }
   const isSearching = searchText !== "";
 

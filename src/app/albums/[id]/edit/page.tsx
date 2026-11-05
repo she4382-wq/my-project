@@ -7,8 +7,10 @@ import { toFormValues } from "@/lib/albumFormValues";
 export const dynamic = "force-dynamic";
 
 // 주소 /albums/아이디/edit 의 화면입니다. (서버에서 실행돼요)
-export default async function EditAlbumPage({ params }: { params: { id: string } }) {
-  const album = await getAlbum(params.id);
+// Next.js 15부터 params는 "나중에 도착하는 값(Promise)"이라 await로 기다렸다가 꺼내요.
+export default async function EditAlbumPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const album = await getAlbum(id);
 
   // 앨범이 없으면 "앨범을 찾을 수 없어요" 화면 (../not-found.tsx)
   if (album === null) {
